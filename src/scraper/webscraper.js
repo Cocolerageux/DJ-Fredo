@@ -45,7 +45,7 @@ class EcoleDirecteWebScraper {
         ];
 
         let browserConfig = {
-            headless: isProduction ? 'new' : false,
+            headless: (process.env.DEBUG_MODE === 'true') ? false : (isProduction ? 'new' : false),
             args: isProduction ? productionArgs : developmentArgs,
             slowMo: isProduction ? 0 : 100
         };
@@ -196,28 +196,79 @@ class EcoleDirecteWebScraper {
 
             console.log('🔐 Connexion École Directe via web scraping...');
             
-            // Aller sur le site École Directe
+            // Aller sur le site École Directe avec des options anti-détection
+            console.log('🌐 Navigation vers École Directe...');
             await this.page.goto('https://www.ecoledirecte.com', { 
-                waitUntil: 'domcontentloaded',
+                waitUntil: 'networkidle2',
                 timeout: 30000 
             });
             
             console.log('📄 Page École Directe chargée');
             
-            // Attendre un peu pour que la page se charge complètement
+            // Attendre que la page se charge complètement et analyser le contenu
             await this.page.waitForTimeout ? 
-                this.page.waitForTimeout(2000) : 
-                new Promise(resolve => setTimeout(resolve, 2000));
+                this.page.waitForTimeout(3000) : 
+                new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Debug : vérifier le contenu de la page
+            const pageTitle = await this.page.title();
+            const pageUrl = this.page.url();
+            console.log('📋 Titre de la page:', pageTitle);
+            console.log('📍 URL actuelle:', pageUrl);
+            
+            // Analyser le contenu de la page pour détecter les problèmes
+            const pageAnalysis = await this.page.evaluate(() => {
+                return {
+                    hasLoginForm: !!document.querySelector('form'),
+                    inputsCount: document.querySelectorAll('input').length,
+                    buttonsCount: document.querySelectorAll('button').length,
+                    bodyText: document.body.innerText.substring(0, 500),
+                    allInputs: Array.from(document.querySelectorAll('input')).map(input => ({
+                        type: input.type,
+                        name: input.name,
+                        id: input.id,
+                        placeholder: input.placeholder,
+                        className: input.className,
+                        visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                    })),
+                    allButtons: Array.from(document.querySelectorAll('button, input[type="submit"]')).map(btn => ({
+                        text: btn.textContent || btn.value,
+                        type: btn.type,
+                        className: btn.className,
+                        id: btn.id,
+                        visible: btn.offsetWidth > 0 && btn.offsetHeight > 0
+                    }))
+                };
+            });
+            
+            console.log('📊 Analyse de la page:');
+            console.log('  - Formulaires:', pageAnalysis.hasLoginForm);
+            console.log('  - Inputs:', pageAnalysis.inputsCount);
+            console.log('  - Boutons:', pageAnalysis.buttonsCount);
+            console.log('  - Contenu (extrait):', pageAnalysis.bodyText.substring(0, 200));
+            console.log('  - Tous les inputs:', pageAnalysis.allInputs);
+            console.log('  - Tous les boutons:', pageAnalysis.allButtons);
+            
+            // Vérifier s'il y a une redirection ou une page d'erreur
+            if (pageUrl.includes('error') || pageTitle.includes('error') || pageTitle.includes('403')) {
+                console.log('⚠️ Page d\'erreur détectée, tentative de rechargement...');
+                await this.page.reload({ waitUntil: 'networkidle2' });
+                await this.page.waitForTimeout ? 
+                    this.page.waitForTimeout(3000) : 
+                    new Promise(resolve => setTimeout(resolve, 3000));
+            }
             
             // Chercher et remplir les champs de connexion
             console.log('🔍 Recherche des champs de connexion...');
             
-            // Essayer différents sélecteurs pour l'identifiant
+            // Essayer différents sélecteurs pour l'identifiant (dans l'ordre de priorité)
             const usernameSelectors = [
+                'input[name="username"]',         // Nouveau sélecteur trouvé
+                'input[id="username"]',           // Nouveau sélecteur trouvé
+                'input[placeholder*="Identifiant"]',
                 'input[name="identifiant"]',
                 'input[id="identifiant"]',
                 'input[placeholder*="identifiant"]',
-                'input[placeholder*="Identifiant"]',
                 'input[type="text"]'
             ];
             
@@ -244,12 +295,14 @@ class EcoleDirecteWebScraper {
             await usernameField.type(username, { delay: 100 });
             console.log('✅ Identifiant saisi');
             
-            // Chercher le champ mot de passe
+            // Chercher le champ mot de passe avec les nouveaux sélecteurs
             const passwordSelectors = [
+                'input[name="password"]',         // Nouveau sélecteur trouvé
+                'input[id="password"]',           // Nouveau sélecteur trouvé
+                'input[placeholder*="Mot de passe"]',
                 'input[name="motdepasse"]',
                 'input[id="motdepasse"]',
                 'input[placeholder*="mot de passe"]',
-                'input[placeholder*="Mot de passe"]',
                 'input[type="password"]'
             ];
             
@@ -275,8 +328,9 @@ class EcoleDirecteWebScraper {
             await passwordField.type(password, { delay: 100 });
             console.log('✅ Mot de passe saisi');
             
-            // Chercher et cliquer sur le bouton de connexion
+            // Chercher et cliquer sur le bouton de connexion avec les nouveaux sélecteurs
             const loginSelectors = [
+                'button[id="connexion"]',         // Nouveau sélecteur trouvé
                 'button[type="submit"]',
                 'input[type="submit"]',
                 'button:contains("Connexion")',
@@ -314,23 +368,39 @@ class EcoleDirecteWebScraper {
                 throw new Error('Bouton de connexion non trouvé');
             }
             
-            // Cliquer sur connexion et attendre
+            // Cliquer sur connexion et attendre avec meilleure gestion des erreurs
             console.log('🔄 Clic sur le bouton de connexion...');
-            await loginButton.click();
             
-            // Attendre la navigation ou les changements
             try {
-                await this.page.waitForNavigation({ 
-                    waitUntil: 'domcontentloaded',
-                    timeout: 15000 
-                });
+                // Cliquer et attendre les changements potentiels
+                await Promise.all([
+                    loginButton.click(),
+                    this.page.waitForResponse(response => response.url().includes('login') || response.url().includes('auth'), { timeout: 10000 }).catch(() => null)
+                ]);
             } catch (e) {
-                console.log('⚠️ Pas de navigation détectée, vérification de l\'état...');
+                console.log('⚠️ Erreur lors du clic, tentative de clic simple...');
+                await loginButton.click();
             }
             
+            // Attendre et gérer les changements de page possibles
             await this.page.waitForTimeout ? 
                 this.page.waitForTimeout(3000) : 
                 new Promise(resolve => setTimeout(resolve, 3000));
+                
+            // Vérifier si la page est encore valide
+            try {
+                await this.page.evaluate(() => document.title);
+            } catch (e) {
+                console.log('⚠️ Page détachée détectée, tentative de récupération...');
+                // La page a changé, essayer de récupérer le contexte
+                const pages = await this.browser.pages();
+                if (pages.length > 1) {
+                    this.page = pages[pages.length - 1]; // Prendre la dernière page
+                    console.log('✅ Contexte de page récupéré');
+                } else {
+                    throw new Error('Impossible de récupérer le contexte de la page');
+                }
+            }
             
             // Vérifier si on est connecté
             const currentUrl = this.page.url();
