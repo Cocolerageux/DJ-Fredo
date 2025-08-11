@@ -41,7 +41,7 @@ DISCORD_TOKEN=MTxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxx.xxxxxxxxxxxxxxxxxxxxxxx
 DISCORD_CLIENT_ID=1234567890123456789
 NODE_ENV=production
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
-PUPPETEER_CACHE_DIR=./puppeteer-cache
+PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 DEBUG=puppeteer:*
 ```
 

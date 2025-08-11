@@ -92,7 +92,8 @@ class EcoleDirecteWebScraper {
                 // Chercher Chrome dans le cache Puppeteer
                 const fs = require('fs');
                 const path = require('path');
-                const cacheDir = process.env.PUPPETEER_CACHE_DIR || './puppeteer-cache';
+                const cacheDir = process.env.PUPPETEER_CACHE_DIR || 
+                                (isProduction ? '/opt/render/.cache/puppeteer' : './puppeteer-cache');
                 
                 console.log(`🔍 Recherche dans: ${cacheDir}`);
                 
@@ -104,13 +105,24 @@ class EcoleDirecteWebScraper {
                         if (fs.existsSync(chromeDir)) {
                             console.log('✅ Dossier chrome trouvé');
                             
-                            const versions = fs.readdirSync(chromeDir).filter(v => v.startsWith('linux-'));
-                            console.log(`📋 Versions disponibles: ${versions.join(', ')}`);
+                            // Chercher toutes les versions disponibles (linux-, win64-, etc.)
+                            const allVersions = fs.readdirSync(chromeDir);
+                            const linuxVersions = allVersions.filter(v => v.startsWith('linux-'));
+                            const win64Versions = allVersions.filter(v => v.startsWith('win64-'));
+                            
+                            console.log(`📋 Toutes versions: ${allVersions.join(', ')}`);
+                            console.log(`📋 Versions Linux: ${linuxVersions.join(', ')}`);
+                            console.log(`📋 Versions Win64: ${win64Versions.join(', ')}`);
+                            
+                            // Prioriser Linux pour production, Win64 pour développement
+                            const versions = isProduction ? linuxVersions : win64Versions;
                             
                             if (versions.length > 0) {
                                 // Prendre la dernière version
                                 const latestVersion = versions.sort().pop();
-                                const chromePath = path.join(chromeDir, latestVersion, 'chrome-linux64', 'chrome');
+                                const chromeExecutable = isProduction ? 'chrome' : 'chrome.exe';
+                                const chromeSubDir = isProduction ? 'chrome-linux64' : 'chrome-win64';
+                                const chromePath = path.join(chromeDir, latestVersion, chromeSubDir, chromeExecutable);
                                 
                                 console.log(`🎯 Test du chemin: ${chromePath}`);
                                 
