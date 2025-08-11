@@ -139,6 +139,29 @@ Render redémarre automatiquement votre bot en cas de crash.
    - Cherchez : "📁 Cache Puppeteer: /opt/render/.cache/puppeteer"
    - Si pas affiché → problème de variables d'environnement
 
+### ⚠️ Test Anti-Bot Voight-Kampff
+**Erreur :** `Titre de la page: Voight-Kampff Browser Test` ou `Checking Your Browser`
+
+**École Directe utilise maintenant un système anti-bot avancé qui détecte Puppeteer.**
+
+**Solution automatique intégrée :**
+- ✅ Le bot détecte automatiquement le test anti-bot
+- ✅ Attend jusqu'à 50 secondes pour la redirection automatique
+- ✅ Simule des interactions humaines si nécessaire
+- ✅ Re-tente jusqu'à 10 fois avant d'abandonner
+
+**Dans les logs, vous verrez :**
+```
+🛡️ Test anti-bot Voight-Kampff détecté, tentative de contournement...
+⏳ Tentative 1/10 - Attente de la redirection...
+✅ Test anti-bot passé avec succès !
+```
+
+**Si le contournement échoue :**
+1. **Attendre quelques heures** - École Directe peut bloquer temporairement l'IP
+2. **Vérifier l'établissement** - Certains établissements ont des protections renforcées
+3. **Contacter l'équipe** - Le système anti-bot peut évoluer
+
 ### QCM ne fonctionne pas
 En production (mode headless), les QCM nécessitent une approche différente.
 Le bot tentera de détecter automatiquement les réponses.
