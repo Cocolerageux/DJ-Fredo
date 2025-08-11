@@ -1,6 +1,7 @@
-const { Client, GatewayIntentBits, REST, Routes, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 require('dotenv').config();
 
 // Création du client Discord avec les intents nécessaires
@@ -48,6 +49,27 @@ if (fs.existsSync(eventsPath)) {
         console.log(`[INFO] Événement chargé: ${event.name}`);
     }
 }
+
+// Serveur de santé pour Render
+const server = http.createServer((req, res) => {
+    if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+            status: 'healthy', 
+            bot: client.user ? 'connected' : 'disconnected',
+            uptime: process.uptime(),
+            timestamp: new Date().toISOString()
+        }));
+    } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🌐 Serveur de santé démarré sur le port ${PORT}`);
+});
 
 // Connexion du bot
 client.login(process.env.DISCORD_TOKEN);

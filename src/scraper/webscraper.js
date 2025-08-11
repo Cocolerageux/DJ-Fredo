@@ -13,17 +13,30 @@ class EcoleDirecteWebScraper {
      */
     async init() {
         console.log('🚀 Initialisation du navigateur...');
+        
+        // Détecter l'environnement de production
+        const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+        
         this.browser = await puppeteer.launch({
-            headless: false, // Navigateur visible pour voir le QCM
+            headless: isProduction ? 'new' : false, // Headless en production, visible en local
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-blink-features=AutomationControlled',
                 '--disable-web-security',
                 '--disable-features=VizDisplayCompositor',
-                '--start-maximized'
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                isProduction ? '--start-maximized' : '--start-maximized'
             ],
-            slowMo: 100 // Ralentir les actions pour qu'elles soient visibles
+            executablePath: isProduction ? '/usr/bin/chromium-browser' : undefined,
+            slowMo: isProduction ? 0 : 100 // Pas de ralenti en production
         });
         
         this.page = await this.browser.newPage();
