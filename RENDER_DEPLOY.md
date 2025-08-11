@@ -41,12 +41,14 @@ DISCORD_TOKEN=MTxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxx.xxxxxxxxxxxxxxxxxxxxxxx
 DISCORD_CLIENT_ID=1234567890123456789
 NODE_ENV=production
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 ```
 
 🚨 **CHANGEMENT IMPORTANT :**
 - **Supprimez** `PUPPETEER_EXECUTABLE_PATH` (on laisse Puppeteer gérer)
+- **Ajoutez** `PUPPETEER_CACHE_DIR` pour le bon répertoire cache
 - **Changez** `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` à `false`
-- Render utilisera le Chromium intégré de Puppeteer
+- Render utilisera le cache path correct pour Chrome
 
 ### 4. Plan et région
 
@@ -113,22 +115,28 @@ Render redémarre automatiquement votre bot en cas de crash.
 3. Consultez les logs pour les erreurs
 
 ### Erreurs Puppeteer
-**Erreur :** `Browser was not found at the configured executablePath`
+**Erreur :** `Could not find Chrome (ver. 139.0.7258.66)`
 
-**Solutions :**
-1. **Variables d'environnement :**
-   - Supprimez `PUPPETEER_EXECUTABLE_PATH` si elle existe
-   - Mettez `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false`
-   - Redéployez le service
+**Solution complète :**
+1. **Variables d'environnement Render :**
+   ```env
+   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+   PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
+   ```
 
-2. **Si l'erreur persiste :**
-   - Le code utilise maintenant un système de fallback automatique
-   - Puppeteer téléchargera son propre Chromium
-   - Vérifiez les logs pour voir "✅ Navigateur initialisé"
+2. **Vérification du build :**
+   - Render → Logs → Build logs
+   - Cherchez : "📦 Installation de Chrome..."
+   - Doit afficher : "✅ Configuration terminée !"
 
-3. **Problème de mémoire :**
-   - Render Free a 512MB RAM
-   - Si trop de sessions simultanées, passez au plan payant
+3. **Si l'erreur persiste :**
+   - Manual Deploy → Clear build cache
+   - Redéployez avec un build fresh
+   - Le script créera automatiquement le répertoire cache
+
+4. **Debug dans les logs de démarrage :**
+   - Cherchez : "📁 Cache Puppeteer: /opt/render/.cache/puppeteer"
+   - Si pas affiché → problème de variables d'environnement
 
 ### QCM ne fonctionne pas
 En production (mode headless), les QCM nécessitent une approche différente.

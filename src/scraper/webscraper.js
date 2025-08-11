@@ -52,18 +52,11 @@ class EcoleDirecteWebScraper {
 
         // Configuration spécifique pour Render
         if (isProduction) {
-            // Essayer plusieurs chemins pour Chromium
-            const possiblePaths = [
-                '/usr/bin/chromium-browser',
-                '/usr/bin/chromium',
-                '/usr/bin/google-chrome-stable',
-                '/usr/bin/google-chrome'
-            ];
-
-            // Utiliser Puppeteer pour télécharger Chromium si aucun n'est trouvé
-            browserConfig.executablePath = undefined; // Laisser Puppeteer gérer
+            // Configuration du cache path pour Render
+            process.env.PUPPETEER_CACHE_DIR = '/opt/render/.cache/puppeteer';
             
             console.log('🌐 Mode production détecté - Configuration Render');
+            console.log('📁 Cache Puppeteer:', process.env.PUPPETEER_CACHE_DIR);
         } else {
             console.log('💻 Mode développement - Navigateur visible');
         }
