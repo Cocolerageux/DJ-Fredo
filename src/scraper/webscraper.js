@@ -92,7 +92,7 @@ class EcoleDirecteWebScraper {
                 // Chercher Chrome dans le cache Puppeteer
                 const fs = require('fs');
                 const path = require('path');
-                const cacheDir = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+                const cacheDir = process.env.PUPPETEER_CACHE_DIR || './puppeteer-cache';
                 
                 console.log(`🔍 Recherche dans: ${cacheDir}`);
                 

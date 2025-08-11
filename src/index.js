@@ -91,7 +91,7 @@ const server = http.createServer((req, res) => {
         };
         
         // Vérifier le cache Puppeteer
-        const cacheDir = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+        const cacheDir = process.env.PUPPETEER_CACHE_DIR || './puppeteer-cache';
         try {
             if (fs.existsSync(cacheDir)) {
                 diagnostic.cache.exists = true;

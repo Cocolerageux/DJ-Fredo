@@ -96,3 +96,6 @@ typings/
 # Bot specific
 config.json
 .vscode/
+
+# Puppeteer cache
+puppeteer-cache/
