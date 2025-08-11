@@ -9,8 +9,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "node src/deploy-commands.js",
     "build": "echo 'No build required for Node.js'",
-    "render-build": "npm install && npx puppeteer browsers install chrome",
-    "render-start": "NODE_ENV=production node src/index.js"
+    "render-build": "npm install",
+    "render-start": "npx puppeteer browsers install chrome && NODE_ENV=production node src/index.js"
   },
   "keywords": [
     "discord",
@@ -35,6 +35,6 @@
     "node": ">=16.0.0"
   },
   "puppeteer": {
-    "cacheDirectory": "/opt/render/.cache/puppeteer"
+    "cacheDirectory": "./puppeteer-cache"
   }
 }

@@ -41,15 +41,15 @@ DISCORD_TOKEN=MTxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxx.xxxxxxxxxxxxxxxxxxxxxxx
 DISCORD_CLIENT_ID=1234567890123456789
 NODE_ENV=production
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
-PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
-PUPPETEER_EXECUTABLE_PATH=/opt/render/.cache/puppeteer/chrome/linux-131.0.6778.204/chrome-linux64/chrome
+PUPPETEER_CACHE_DIR=./puppeteer-cache
+DEBUG=puppeteer:*
 ```
 
-🚨 **CHANGEMENT IMPORTANT :**
-- **Ajoutez** `PUPPETEER_EXECUTABLE_PATH` avec le chemin exact du Chrome installé
-- **Ajoutez** `PUPPETEER_CACHE_DIR` pour le bon répertoire cache
-- **Changez** `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` à `false`
-- Render va installer Chrome automatiquement dans le cache
+🚨 **NOUVELLE STRATÉGIE :**
+- Chrome s'installe maintenant au **démarrage** (pas au build)
+- Cache local dans le projet (pas `/opt/render/`)
+- **Supprimez** `PUPPETEER_EXECUTABLE_PATH` - auto-détection
+- DEBUG activé pour diagnostiquer les problèmes
 
 ### 4. Plan et région
 
