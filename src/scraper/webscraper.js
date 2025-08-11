@@ -183,11 +183,93 @@ class EcoleDirecteWebScraper {
         
         this.page = await this.browser.newPage();
         
-        // Configuration du navigateur pour éviter la détection
+        // Configuration avancée anti-détection pour contourner Voight-Kampff Test
         await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
         await this.page.setViewport({ width: 1366, height: 768 });
         
-        // Masquer les propriétés Puppeteer
+        // Définir des headers réalistes
+        await this.page.setExtraHTTPHeaders({
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1'
+        });
+        
+        // Masquer les propriétés Puppeteer et ajouter des propriétés réalistes
+        await this.page.evaluateOnNewDocument(() => {
+            // Supprimer les traces de Puppeteer
+            delete window.navigator.webdriver;
+            
+            // Redéfinir les propriétés navigator
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined,
+            });
+            
+            // Ajouter des propriétés manquantes pour paraître plus humain
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [
+                    {
+                        0: {type: "application/x-google-chrome-pdf", suffixes: "pdf", description: "Portable Document Format", enabledPlugin: true},
+                        name: "Chrome PDF Plugin",
+                        filename: "internal-pdf-viewer",
+                        description: "Portable Document Format"
+                    },
+                    {
+                        0: {type: "application/pdf", suffixes: "pdf", description: "Portable Document Format", enabledPlugin: true},
+                        name: "Chrome PDF Viewer", 
+                        filename: "mhjfbmdgcfjbbpaeojofohoefgiehjai",
+                        description: "Portable Document Format"
+                    }
+                ]
+            });
+            
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['fr-FR', 'fr', 'en-US', 'en']
+            });
+            
+            // Simuler des événements de souris pour paraître plus humain
+            const originalQuery = window.document.querySelector;
+            window.document.querySelector = function(selector) {
+                return originalQuery.call(document, selector);
+            };
+            
+            // Ajouter de la latence humaine
+            const originalAddEventListener = EventTarget.prototype.addEventListener;
+            EventTarget.prototype.addEventListener = function(type, listener, options) {
+                return originalAddEventListener.call(this, type, listener, options);
+            };
+            
+            // Masquer les propriétés Chrome automation
+            if (navigator.webdriver === false) {
+                delete navigator.webdriver;
+            }
+            
+            // Simulation de comportement humain
+            Object.defineProperty(navigator, 'hardwareConcurrency', {
+                get: () => 4
+            });
+            
+            Object.defineProperty(navigator, 'deviceMemory', {
+                get: () => 8
+            });
+            
+            // Simuler WebGL
+            const getParameter = WebGLRenderingContext.prototype.getParameter;
+            WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                if (parameter === 37445) {
+                    return 'Intel Inc.';
+                }
+                if (parameter === 37446) {
+                    return 'Intel(R) Iris(R) Xe Graphics';
+                }
+                return getParameter(parameter);
+            };
+        });
         await this.page.evaluateOnNewDocument(() => {
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined,
@@ -260,6 +342,79 @@ class EcoleDirecteWebScraper {
             console.log('  - Contenu (extrait):', pageAnalysis.bodyText.substring(0, 200));
             console.log('  - Tous les inputs:', pageAnalysis.allInputs);
             console.log('  - Tous les boutons:', pageAnalysis.allButtons);
+            
+            // Détecter et gérer le test Voight-Kampff Browser Test
+            if (pageTitle.includes('Voight-Kampff') || pageAnalysis.bodyText.includes('Checking Your Browser')) {
+                console.log('🛡️ Test anti-bot Voight-Kampff détecté, tentative de contournement...');
+                
+                // Attendre que le test se termine automatiquement
+                let attempts = 0;
+                const maxAttempts = 10;
+                
+                while (attempts < maxAttempts) {
+                    console.log(`⏳ Tentative ${attempts + 1}/${maxAttempts} - Attente de la redirection...`);
+                    
+                    // Attendre 5 secondes entre chaque vérification
+                    await this.page.waitForTimeout ? 
+                        this.page.waitForTimeout(5000) : 
+                        new Promise(resolve => setTimeout(resolve, 5000));
+                    
+                    // Vérifier si la page a changé
+                    const newTitle = await this.page.title();
+                    const newUrl = this.page.url();
+                    
+                    console.log(`📄 Nouveau titre: ${newTitle}`);
+                    console.log(`📍 Nouvelle URL: ${newUrl}`);
+                    
+                    if (!newTitle.includes('Voight-Kampff') && !newTitle.includes('Browser Test')) {
+                        console.log('✅ Test anti-bot passé avec succès !');
+                        break;
+                    }
+                    
+                    // Si nous sommes toujours sur la page de test, essayer quelques actions
+                    if (attempts === 3) {
+                        console.log('🔄 Tentative d\'interaction pour accélérer le processus...');
+                        try {
+                            // Simuler un mouvement de souris
+                            await this.page.mouse.move(Math.random() * 800, Math.random() * 600);
+                            await this.page.waitForTimeout ? 
+                                this.page.waitForTimeout(1000) : 
+                                new Promise(resolve => setTimeout(resolve, 1000));
+                            
+                            // Simuler un clic léger
+                            await this.page.mouse.click(Math.random() * 800, Math.random() * 600);
+                        } catch (e) {
+                            console.log('⚠️ Interaction simulée échouée:', e.message);
+                        }
+                    }
+                    
+                    attempts++;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    console.log('❌ Impossible de passer le test anti-bot après', maxAttempts, 'tentatives');
+                    throw new Error('Test anti-bot Voight-Kampff non résolu');
+                }
+                
+                // Attendre encore un peu pour que la nouvelle page se charge
+                await this.page.waitForTimeout ? 
+                    this.page.waitForTimeout(3000) : 
+                    new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Re-analyser la page après avoir passé le test
+                const newPageAnalysis = await this.page.evaluate(() => {
+                    return {
+                        hasLoginForm: !!document.querySelector('form'),
+                        inputsCount: document.querySelectorAll('input').length,
+                        bodyText: document.body.innerText.substring(0, 200)
+                    };
+                });
+                
+                console.log('📊 Nouvelle analyse après test anti-bot:');
+                console.log('  - Formulaires:', newPageAnalysis.hasLoginForm);
+                console.log('  - Inputs:', newPageAnalysis.inputsCount);
+                console.log('  - Contenu:', newPageAnalysis.bodyText);
+            }
             
             // Vérifier s'il y a une redirection ou une page d'erreur
             if (pageUrl.includes('error') || pageTitle.includes('error') || pageTitle.includes('403')) {
