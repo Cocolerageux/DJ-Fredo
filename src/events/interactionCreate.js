@@ -74,23 +74,23 @@ module.exports = {
 
                     if (result.success) {
                         // Connexion directe réussie
+                        const userInfo = result.userInfo || {};
                         const successEmbed = new EmbedBuilder()
                             .setTitle('✅ Connexion réussie !')
-                            .setDescription(`Bienvenue **${result.account.prenom} ${result.account.nom}** !\n\nVous êtes maintenant connecté à École Directe.`)
+                            .setDescription(`Bienvenue **${userInfo.name || 'Utilisateur'}** !\n\nVous êtes maintenant connecté à École Directe.`)
                             .setColor(0x00FF00)
                             .addFields(
-                                { name: '🏫 Établissement', value: result.account.etablissement || 'Non spécifié', inline: true },
+                                { name: '🏫 Page', value: userInfo.title || 'École Directe', inline: true },
                                 { name: '🎓 Type de compte', value: 'Élève', inline: true },
                                 { name: '📱 Fonctionnalités', value: 'Utilisez `/notes`, `/emploi`, `/devoirs`, etc.', inline: false },
-                                { name: '🔧 Méthode', value: 'Web scraping sécurisé', inline: true }
+                                { name: '🔧 Méthode', value: 'Web scraping avec contournement anti-bot', inline: true }
                             )
                             .setFooter({ text: 'École Directe • Connexion active via navigateur' })
                             .setTimestamp();
 
                         await interaction.editReply({ embeds: [successEmbed] });
-                        // Connexion réussie, on peut fermer le navigateur
-                        await scraper.close();
-                        userScrapers.delete(interaction.user.id);
+                        // Garde le navigateur ouvert pour les autres commandes
+                        console.log('🔐 Connexion réussie, navigateur maintenu pour les commandes');
                     } else if (result.qcmRequired && result.qcmData) {
                         console.log('🔐 QCM requis détecté...');
                         

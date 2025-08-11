@@ -28,67 +28,39 @@ module.exports = {
         await interaction.deferReply();
 
         try {
-            const result = await api.getNotes();
+            console.log('📊 Récupération des notes via WebScraper...');
+            const notes = await scraper.getNotes();
 
-            if (result.success) {
-                const notesData = result.data;
-                
+            if (notes && notes.length > 0) {
                 // Créer l'embed avec les notes
                 const embed = new EmbedBuilder()
                     .setTitle('📊 Vos Notes - École Directe')
                     .setColor(0x0099FF)
                     .setTimestamp();
 
-                // Ajouter les informations générales
-                if (notesData.periodes && notesData.periodes.length > 0) {
-                    const currentPeriode = notesData.periodes[0];
-                    embed.setDescription(`**Période :** ${currentPeriode.periode}\n**Classe :** ${currentPeriode.classe || 'Non spécifiée'}`);
-                    
-                    // Ajouter les moyennes générales
-                    if (currentPeriode.ensembleMatieres && currentPeriode.ensembleMatieres.moyenneGenerale) {
-                        embed.addFields({
-                            name: '� Moyenne Générale',
-                            value: `**${currentPeriode.ensembleMatieres.moyenneGenerale.moyenne}** / 20\n🎯 Moyenne de classe: ${currentPeriode.ensembleMatieres.moyenneGenerale.moyenneClasse || 'N/A'}`,
-                            inline: true
-                        });
-                    }
-                }
-
-                // Ajouter les notes récentes (max 5)
-                if (notesData.notes && notesData.notes.length > 0) {
-                    const recentNotes = notesData.notes.slice(0, 5);
-                    const notesText = recentNotes.map(note => 
-                        `**${note.libelleMatiere}**\n📝 ${note.devoir}\n🎯 **${note.valeur}** / ${note.noteSur} (Coeff: ${note.coef})\n📅 ${new Date(note.date).toLocaleDateString('fr-FR')}`
-                    ).join('\n\n');
-                    
-                    embed.addFields({
-                        name: '� Notes Récentes',
-                        value: notesText || 'Aucune note récente',
-                        inline: false
-                    });
-                }
-
-                // Ajouter les moyennes par matière (top 3)
-                if (notesData.periodes && notesData.periodes[0] && notesData.periodes[0].ensembleMatieres && notesData.periodes[0].ensembleMatieres.disciplines) {
-                    const matieres = notesData.periodes[0].ensembleMatieres.disciplines.slice(0, 3);
-                    const matieresText = matieres.map(matiere => 
-                        `**${matiere.discipline}**: ${matiere.moyenne || 'N/A'} / 20`
-                    ).join('\n');
-                    
-                    if (matieresText) {
-                        embed.addFields({
-                            name: '� Moyennes par Matière (Top 3)',
-                            value: matieresText,
-                            inline: true
-                        });
-                    }
-                }
-
-                embed.setFooter({ text: 'École Directe • Notes mises à jour' });
+                // Ajouter les notes récentes
+                const recentNotes = notes.slice(0, 8);
+                const notesText = recentNotes.map((note, index) => 
+                    `**${index + 1}.** ${note.matiere || 'Matière'}\n📝 **${note.note}**/${note.sur} - ${note.date || 'Date inconnue'}`
+                ).join('\n\n');
+                
+                embed.setDescription(`**Total :** ${notes.length} notes trouvées\n\n${notesText}`);
+                embed.setFooter({ text: 'École Directe • Notes récupérées par web scraping' });
 
                 await interaction.editReply({ embeds: [embed] });
             } else {
-                throw new Error(result.error);
+                const errorEmbed = new EmbedBuilder()
+                    .setTitle('📊 Aucune note trouvée')
+                    .setDescription('Aucune note n\'a été trouvée sur votre compte École Directe.')
+                    .setColor(0xFFAA00)
+                    .addFields({
+                        name: '💡 Suggestions',
+                        value: '• Vérifiez que des notes sont publiées\n• Reconnectez-vous avec `/login`\n• Contactez votre établissement',
+                        inline: false
+                    })
+                    .setFooter({ text: 'École Directe • Aucune donnée' });
+
+                await interaction.editReply({ embeds: [errorEmbed] });
             }
         } catch (error) {
             console.error('Erreur récupération notes:', error);
@@ -98,11 +70,18 @@ module.exports = {
                 .setDescription(`**Erreur :** ${error.message}`)
                 .setColor(0xFF0000)
                 .addFields({
+                    name: '🔧 Détails',
+                    value: error.message.includes('WebScraper non initialisé') ? 
+                           'Le navigateur n\'est pas initialisé. Reconnectez-vous avec `/login`.' :
+                           'Erreur technique lors de la récupération des données.',
+                    inline: false
+                },
+                {
                     name: '💡 Solutions',
-                    value: '• Vérifiez votre connexion\n• Reconnectez-vous avec `/login`\n• Contactez votre établissement si le problème persiste',
+                    value: '• Reconnectez-vous avec `/login`\n• Vérifiez votre connexion\n• Contactez votre établissement si le problème persiste',
                     inline: false
                 })
-                .setFooter({ text: 'École Directe • Erreur' });
+                .setFooter({ text: 'École Directe • Erreur web scraping' });
 
             await interaction.editReply({ embeds: [errorEmbed] });
         }
