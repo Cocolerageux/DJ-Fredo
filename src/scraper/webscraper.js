@@ -17,27 +17,73 @@ class EcoleDirecteWebScraper {
         // Détecter l'environnement de production
         const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
         
-        this.browser = await puppeteer.launch({
-            headless: isProduction ? 'new' : false, // Headless en production, visible en local
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                isProduction ? '--start-maximized' : '--start-maximized'
-            ],
-            executablePath: isProduction ? '/usr/bin/chromium-browser' : undefined,
-            slowMo: isProduction ? 0 : 100 // Pas de ralenti en production
-        });
+        // Configuration pour Render/Production
+        const productionArgs = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
+        ];
+
+        // Configuration pour développement local
+        const developmentArgs = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--start-maximized'
+        ];
+
+        let browserConfig = {
+            headless: isProduction ? 'new' : false,
+            args: isProduction ? productionArgs : developmentArgs,
+            slowMo: isProduction ? 0 : 100
+        };
+
+        // Configuration spécifique pour Render
+        if (isProduction) {
+            // Essayer plusieurs chemins pour Chromium
+            const possiblePaths = [
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/usr/bin/google-chrome-stable',
+                '/usr/bin/google-chrome'
+            ];
+
+            // Utiliser Puppeteer pour télécharger Chromium si aucun n'est trouvé
+            browserConfig.executablePath = undefined; // Laisser Puppeteer gérer
+            
+            console.log('🌐 Mode production détecté - Configuration Render');
+        } else {
+            console.log('💻 Mode développement - Navigateur visible');
+        }
+
+        try {
+            this.browser = await puppeteer.launch(browserConfig);
+            console.log('✅ Navigateur initialisé avec succès');
+        } catch (error) {
+            console.error('❌ Erreur initialisation navigateur:', error.message);
+            
+            // Fallback : essayer sans executablePath
+            if (isProduction && browserConfig.executablePath) {
+                console.log('🔄 Tentative avec Chromium par défaut...');
+                delete browserConfig.executablePath;
+                this.browser = await puppeteer.launch(browserConfig);
+                console.log('✅ Navigateur initialisé en fallback');
+            } else {
+                throw error;
+            }
+        }
         
         this.page = await this.browser.newPage();
         

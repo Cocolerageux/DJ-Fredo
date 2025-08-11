@@ -4,6 +4,19 @@ const path = require('path');
 const http = require('http');
 require('dotenv').config();
 
+// Debug des variables d'environnement
+console.log('Debug Variables d\'environnement :');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- DISCORD_TOKEN:', process.env.DISCORD_TOKEN ? 'Defini' : 'Manquant');
+console.log('- DISCORD_CLIENT_ID:', process.env.DISCORD_CLIENT_ID ? 'Defini' : 'Manquant');
+
+// Verification des variables critiques
+if (!process.env.DISCORD_TOKEN) {
+    console.error('ERREUR: DISCORD_TOKEN non defini dans les variables d\'environnement');
+    console.error('Verifiez votre configuration Render ou votre fichier .env');
+    process.exit(1);
+}
+
 // Création du client Discord avec les intents nécessaires
 const client = new Client({
     intents: [

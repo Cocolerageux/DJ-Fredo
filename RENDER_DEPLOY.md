@@ -32,17 +32,21 @@ Avant de déployer, assurez-vous d'avoir :
 - **Build Command** : `npm run render-build`
 - **Start Command** : `npm run render-start`
 
-### 3. Variables d'environnement
+### 3. Variables d'environnement ⚠️ **CRITIQUE**
 
-Dans la section **Environment**, ajoutez :
+Dans la section **Environment**, ajoutez **EXACTEMENT** :
 
 ```env
-DISCORD_TOKEN=votre_token_discord_ici
-DISCORD_CLIENT_ID=votre_client_id_ici
+DISCORD_TOKEN=MTxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxx.xxxxxxxxxxxxxxxxxxxxxxx
+DISCORD_CLIENT_ID=1234567890123456789
 NODE_ENV=production
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
 ```
+
+🚨 **CHANGEMENT IMPORTANT :**
+- **Supprimez** `PUPPETEER_EXECUTABLE_PATH` (on laisse Puppeteer gérer)
+- **Changez** `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` à `false`
+- Render utilisera le Chromium intégré de Puppeteer
 
 ### 4. Plan et région
 
@@ -78,13 +82,53 @@ Render redémarre automatiquement votre bot en cas de crash.
 
 ## 🐛 Résolution de problèmes
 
-### Bot ne se connecte pas
-1. Vérifiez le `DISCORD_TOKEN` dans les variables d'environnement
-2. Consultez les logs pour les erreurs
+### ❌ Bot ne se connecte pas - "TokenInvalid"
+**Erreur :** `Error [TokenInvalid]: An invalid token was provided`
+
+**Si le bot marche localement mais pas sur Render :**
+
+1. **Variables d'environnement Render :**
+   - Allez dans votre service → **Environment**
+   - Vérifiez que `DISCORD_TOKEN` est bien là
+   - **IMPORTANT** : Cliquez sur "Save Environment Variables"
+   - Si la variable existe, **supprimez-la et recréez-la**
+
+2. **Redéploiement obligatoire :**
+   - Après modification des variables : **Manual Deploy** → **Deploy latest commit**
+   - Attendez que le déploiement soit terminé
+
+3. **Vérification dans les logs :**
+   - Render → Logs
+   - Cherchez : `Debug Variables d'environnement`
+   - Doit afficher : `DISCORD_TOKEN: Defini`
+
+**Solutions alternatives :**
+- Essayez de changer la région Render (US East → EU Frankfurt)
+- Créez un nouveau service avec les mêmes paramètres
+- Contactez le support Render si le problème persiste
+
+### ⚠️ Bot se connecte mais commandes ne marchent pas
+1. Vérifiez que `DISCORD_CLIENT_ID` est correct
+2. Assurez-vous que le bot a les bonnes permissions sur Discord
+3. Consultez les logs pour les erreurs
 
 ### Erreurs Puppeteer
-1. Vérifiez que `PUPPETEER_EXECUTABLE_PATH` est correct
-2. Les dépendances Chromium sont installées automatiquement
+**Erreur :** `Browser was not found at the configured executablePath`
+
+**Solutions :**
+1. **Variables d'environnement :**
+   - Supprimez `PUPPETEER_EXECUTABLE_PATH` si elle existe
+   - Mettez `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false`
+   - Redéployez le service
+
+2. **Si l'erreur persiste :**
+   - Le code utilise maintenant un système de fallback automatique
+   - Puppeteer téléchargera son propre Chromium
+   - Vérifiez les logs pour voir "✅ Navigateur initialisé"
+
+3. **Problème de mémoire :**
+   - Render Free a 512MB RAM
+   - Si trop de sessions simultanées, passez au plan payant
 
 ### QCM ne fonctionne pas
 En production (mode headless), les QCM nécessitent une approche différente.
