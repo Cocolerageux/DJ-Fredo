@@ -42,13 +42,14 @@ DISCORD_CLIENT_ID=1234567890123456789
 NODE_ENV=production
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
 PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
+PUPPETEER_EXECUTABLE_PATH=/opt/render/.cache/puppeteer/chrome/linux-131.0.6778.204/chrome-linux64/chrome
 ```
 
 🚨 **CHANGEMENT IMPORTANT :**
-- **Supprimez** `PUPPETEER_EXECUTABLE_PATH` (on laisse Puppeteer gérer)
+- **Ajoutez** `PUPPETEER_EXECUTABLE_PATH` avec le chemin exact du Chrome installé
 - **Ajoutez** `PUPPETEER_CACHE_DIR` pour le bon répertoire cache
 - **Changez** `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` à `false`
-- Render utilisera le cache path correct pour Chrome
+- Render va installer Chrome automatiquement dans le cache
 
 ### 4. Plan et région
 
