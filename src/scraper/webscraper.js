@@ -52,11 +52,30 @@ class EcoleDirecteWebScraper {
 
         // Configuration spécifique pour Render
         if (isProduction) {
-            // Configuration du cache path pour Render
-            process.env.PUPPETEER_CACHE_DIR = '/opt/render/.cache/puppeteer';
+            // Configuration du cache path pour Render - essayer plusieurs options
+            const cachePaths = [
+                '/opt/render/.cache/puppeteer',
+                process.env.PUPPETEER_CACHE_DIR,
+                process.env.HOME + '/.cache/puppeteer'
+            ].filter(Boolean);
+
+            for (const path of cachePaths) {
+                process.env.PUPPETEER_CACHE_DIR = path;
+                console.log('🔍 Tentative cache path:', path);
+                
+                try {
+                    const fs = require('fs');
+                    if (fs.existsSync(path)) {
+                        console.log('✅ Cache path trouvé:', path);
+                        break;
+                    }
+                } catch (e) {
+                    console.log('❌ Cache path non accessible:', path);
+                }
+            }
             
             console.log('🌐 Mode production détecté - Configuration Render');
-            console.log('📁 Cache Puppeteer:', process.env.PUPPETEER_CACHE_DIR);
+            console.log('📁 Cache Puppeteer final:', process.env.PUPPETEER_CACHE_DIR);
         } else {
             console.log('💻 Mode développement - Navigateur visible');
         }
@@ -67,12 +86,40 @@ class EcoleDirecteWebScraper {
         } catch (error) {
             console.error('❌ Erreur initialisation navigateur:', error.message);
             
-            // Fallback : essayer sans executablePath
-            if (isProduction && browserConfig.executablePath) {
-                console.log('🔄 Tentative avec Chromium par défaut...');
-                delete browserConfig.executablePath;
-                this.browser = await puppeteer.launch(browserConfig);
-                console.log('✅ Navigateur initialisé en fallback');
+            if (isProduction) {
+                console.log('🔄 Tentative avec Chromium système...');
+                
+                // Essayer les chemins système Chromium
+                const systemPaths = [
+                    '/usr/bin/chromium-browser',
+                    '/usr/bin/chromium',
+                    '/usr/bin/google-chrome-stable',
+                    '/usr/bin/google-chrome'
+                ];
+                
+                let browserLaunched = false;
+                for (const execPath of systemPaths) {
+                    try {
+                        const fs = require('fs');
+                        if (fs.existsSync(execPath)) {
+                            console.log(`🔍 Tentative avec ${execPath}...`);
+                            browserConfig.executablePath = execPath;
+                            this.browser = await puppeteer.launch(browserConfig);
+                            console.log(`✅ Navigateur initialisé avec ${execPath}`);
+                            browserLaunched = true;
+                            break;
+                        }
+                    } catch (e) {
+                        console.log(`❌ Échec avec ${execPath}:`, e.message);
+                    }
+                }
+                
+                if (!browserLaunched) {
+                    console.log('🔄 Dernière tentative sans executablePath...');
+                    delete browserConfig.executablePath;
+                    this.browser = await puppeteer.launch(browserConfig);
+                    console.log('✅ Navigateur initialisé en mode fallback');
+                }
             } else {
                 throw error;
             }

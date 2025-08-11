@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "node src/deploy-commands.js",
     "build": "echo 'No build required for Node.js'",
-    "render-build": "chmod +x install-puppeteer.sh && ./install-puppeteer.sh",
+    "render-build": "apt-get update && apt-get install -y chromium-browser && npm install",
     "render-start": "NODE_ENV=production node src/index.js"
   },
   "keywords": [
