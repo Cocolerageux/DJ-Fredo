@@ -87,9 +87,57 @@ class EcoleDirecteWebScraper {
             console.error('❌ Erreur initialisation navigateur:', error.message);
             
             if (isProduction) {
-                console.log('🔄 Tentative avec Chromium système...');
+                console.log('🔄 Tentative de détection automatique de Chrome...');
                 
-                // Essayer les chemins système Chromium
+                // Chercher Chrome dans le cache Puppeteer
+                const fs = require('fs');
+                const path = require('path');
+                const cacheDir = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+                
+                console.log(`🔍 Recherche dans: ${cacheDir}`);
+                
+                try {
+                    if (fs.existsSync(cacheDir)) {
+                        console.log('✅ Répertoire cache trouvé');
+                        
+                        const chromeDir = path.join(cacheDir, 'chrome');
+                        if (fs.existsSync(chromeDir)) {
+                            console.log('✅ Dossier chrome trouvé');
+                            
+                            const versions = fs.readdirSync(chromeDir).filter(v => v.startsWith('linux-'));
+                            console.log(`📋 Versions disponibles: ${versions.join(', ')}`);
+                            
+                            if (versions.length > 0) {
+                                // Prendre la dernière version
+                                const latestVersion = versions.sort().pop();
+                                const chromePath = path.join(chromeDir, latestVersion, 'chrome-linux64', 'chrome');
+                                
+                                console.log(`🎯 Test du chemin: ${chromePath}`);
+                                
+                                if (fs.existsSync(chromePath)) {
+                                    console.log('✅ Chrome trouvé ! Tentative de lancement...');
+                                    browserConfig.executablePath = chromePath;
+                                    this.browser = await puppeteer.launch(browserConfig);
+                                    console.log('🎉 Navigateur initialisé avec Chrome détecté !');
+                                    return;
+                                } else {
+                                    console.log('❌ Fichier Chrome non trouvé à ce chemin');
+                                }
+                            } else {
+                                console.log('❌ Aucune version de Chrome trouvée');
+                            }
+                        } else {
+                            console.log('❌ Dossier chrome non trouvé');
+                        }
+                    } else {
+                        console.log('❌ Répertoire cache non trouvé');
+                    }
+                } catch (e) {
+                    console.log('❌ Erreur lors de la détection:', e.message);
+                }
+                
+                // Essayer les chemins système
+                console.log('🔄 Tentative avec les navigateurs système...');
                 const systemPaths = [
                     '/usr/bin/chromium-browser',
                     '/usr/bin/chromium',
@@ -97,29 +145,25 @@ class EcoleDirecteWebScraper {
                     '/usr/bin/google-chrome'
                 ];
                 
-                let browserLaunched = false;
                 for (const execPath of systemPaths) {
                     try {
-                        const fs = require('fs');
                         if (fs.existsSync(execPath)) {
-                            console.log(`🔍 Tentative avec ${execPath}...`);
+                            console.log(`🔍 Test de ${execPath}...`);
                             browserConfig.executablePath = execPath;
                             this.browser = await puppeteer.launch(browserConfig);
                             console.log(`✅ Navigateur initialisé avec ${execPath}`);
-                            browserLaunched = true;
-                            break;
+                            return;
                         }
                     } catch (e) {
                         console.log(`❌ Échec avec ${execPath}:`, e.message);
                     }
                 }
                 
-                if (!browserLaunched) {
-                    console.log('🔄 Dernière tentative sans executablePath...');
-                    delete browserConfig.executablePath;
-                    this.browser = await puppeteer.launch(browserConfig);
-                    console.log('✅ Navigateur initialisé en mode fallback');
-                }
+                // Dernière tentative sans executablePath
+                console.log('🔄 Dernière tentative sans executablePath...');
+                delete browserConfig.executablePath;
+                this.browser = await puppeteer.launch(browserConfig);
+                console.log('✅ Navigateur initialisé en mode fallback');
             } else {
                 throw error;
             }

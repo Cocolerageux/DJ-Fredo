@@ -73,6 +73,66 @@ const server = http.createServer((req, res) => {
             uptime: process.uptime(),
             timestamp: new Date().toISOString()
         }));
+    } else if (req.url === '/diagnostic') {
+        // Diagnostic Puppeteer pour debug
+        const fs = require('fs');
+        const path = require('path');
+        
+        const diagnostic = {
+            timestamp: new Date().toISOString(),
+            environment: {
+                NODE_ENV: process.env.NODE_ENV,
+                PUPPETEER_CACHE_DIR: process.env.PUPPETEER_CACHE_DIR,
+                PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH,
+                PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+            },
+            cache: {},
+            systemPaths: []
+        };
+        
+        // Vérifier le cache Puppeteer
+        const cacheDir = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+        try {
+            if (fs.existsSync(cacheDir)) {
+                diagnostic.cache.exists = true;
+                diagnostic.cache.path = cacheDir;
+                
+                const chromeDir = path.join(cacheDir, 'chrome');
+                if (fs.existsSync(chromeDir)) {
+                    diagnostic.cache.chromeDir = chromeDir;
+                    diagnostic.cache.versions = fs.readdirSync(chromeDir).filter(v => v.startsWith('linux-'));
+                    
+                    if (diagnostic.cache.versions.length > 0) {
+                        const latestVersion = diagnostic.cache.versions.sort().pop();
+                        const chromePath = path.join(chromeDir, latestVersion, 'chrome-linux64', 'chrome');
+                        diagnostic.cache.latestChromePath = chromePath;
+                        diagnostic.cache.chromeExists = fs.existsSync(chromePath);
+                    }
+                }
+            } else {
+                diagnostic.cache.exists = false;
+            }
+        } catch (e) {
+            diagnostic.cache.error = e.message;
+        }
+        
+        // Vérifier les chemins système
+        const systemPaths = [
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/google-chrome'
+        ];
+        
+        for (const execPath of systemPaths) {
+            diagnostic.systemPaths.push({
+                path: execPath,
+                exists: fs.existsSync(execPath)
+            });
+        }
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(diagnostic, null, 2));
     } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not Found');
